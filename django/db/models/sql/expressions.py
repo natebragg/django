@@ -77,8 +77,11 @@ class SQLEvaluator(object):
                 node.name in query.aggregate_select_mask)):
             self.contains_aggregate = True
             source = query.aggregates[node.name].field
-            self.cols[node] = query.aggregates[node.name]
-        else:
+            self.cols[node] = node.name
+        elif ((len(field_list) > 1) or 
+                (field_list[0] not in [i.name for i in self.opts.fields]) or 
+                query.group_by is None or 
+                not getattr(self,'is_summary',False)):
             try:
                 field, source, opts, join_list, last, _ = query.setup_joins(
                     field_list, query.get_meta(),
@@ -90,6 +93,12 @@ class SQLEvaluator(object):
                 raise FieldError("Cannot resolve keyword %r into field. "
                                  "Choices are: %s" % (self.name,
                                                       [f.name for f in self.opts.fields]))
+        else:
+            # The simplest cases. No joins required - 
+            # just reference the provided column alias. 
+            field_name = field_list[0] 
+            source = self.opts.get_field(field_name) 
+            self.cols[node] = field_name 
         return source
 
     ##################################################
@@ -124,8 +133,10 @@ class SQLEvaluator(object):
                 return result
             else:
                 return result, ()
-        else:
+        elif isinstance(col, (tuple, list)):
             return '%s.%s' % (qn(col[0]), qn(col[1])), ()
+        else:
+            return col, ()
 
     def evaluate_date_modifier_node(self, node, qn, connection):
         timedelta = node.children.pop()

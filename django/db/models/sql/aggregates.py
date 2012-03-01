@@ -26,9 +26,9 @@ class Aggregate(expressions.SQLEvaluator):
            type.
 
         """
-        super(Aggregate, self).__init__(expression, query)
         self.is_summary = is_summary
         self.extra = extra
+        super(Aggregate, self).__init__(expression, query)
 
 Avg = Aggregate
 Count = Aggregate
