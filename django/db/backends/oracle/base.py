@@ -369,11 +369,11 @@ WHEN (new.%(col_name)s IS NULL)
 
     def combine_expression(self, connector, sub_expressions):
         "Oracle requires special cases for %% and & operators in query expressions"
-        if connector == '%%':
-            return 'MOD(%s)' % ','.join(sub_expressions)
-        elif connector == '&':
-            return 'BITAND(%s)' % ','.join(sub_expressions)
-        elif connector == '|':
+        if connector == '%s %% %s':
+            connector = 'MOD(%s, %s)'
+        elif connector == '%s & %s':
+            connector = 'BITAND(%s, %s)'
+        elif connector == '%s | %s':
             raise NotImplementedError("Bit-wise or is not supported in Oracle.")
         return super(DatabaseOperations, self).combine_expression(connector, sub_expressions)
 

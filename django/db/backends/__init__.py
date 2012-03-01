@@ -871,8 +871,7 @@ class BaseDatabaseOperations(object):
         can vary between backends (e.g., Oracle with %% and &) and between
         subexpression types (e.g., date expressions)
         """
-        conn = ' %s ' % connector
-        return conn.join(sub_expressions)
+        return connector % tuple(sub_expressions)
 
 class BaseDatabaseIntrospection(object):
     """
