@@ -14,7 +14,7 @@ from django.utils.encoding import force_unicode
 from django.utils.tree import Node
 from django.db import connections, DEFAULT_DB_ALIAS
 from django.db.models import signals
-from django.db.models.expressions import ExpressionNode
+from django.db.models.expressions import ExpressionNode, F
 from django.db.models.fields import FieldDoesNotExist
 from django.db.models.query_utils import InvalidQuery
 from django.db.models.sql import aggregates as base_aggregates_module
@@ -1674,28 +1674,20 @@ class Query(object):
         Converts the query to do count(...) or count(distinct(pk)) in order to
         get its size.
         """
-        if not self.distinct:
-            if not self.select:
-                count = self.aggregates_module.Count('*', is_summary=True)
-            else:
-                assert len(self.select) == 1, \
-                        "Cannot add count col with multiple cols in 'select': %r" % self.select
-                count = self.aggregates_module.Count(self.select[0])
-        else:
+        Cnt = aggregates.Count
+        if not self.select:
             opts = self.model._meta
-            if not self.select:
-                count = self.aggregates_module.Count((self.join((None, opts.db_table, None, None)), opts.pk.column),
-                                         is_summary=True, distinct=True)
-            else:
-                # Because of SQL portability issues, multi-column, distinct
-                # counts need a sub-query -- see get_count() for details.
-                assert len(self.select) == 1, \
-                        "Cannot add count col with multiple cols in 'select'."
-
-                count = self.aggregates_module.Count(self.select[0], distinct=True)
-            # Distinct handling is done in Count(), so don't do it at this
-            # level.
-            self.distinct = False
+            ex = (self.join((None, opts.db_table, None, None)), opts.pk.column)[1] if self.distinct else '*'
+            count = self.aggregates_module.Count(Cnt(ex, distinct=self.distinct), self, is_summary=True)
+        else:
+            # Because of SQL portability issues, multi-column, distinct
+            # counts need a sub-query -- see get_count() for details.
+            assert len(self.select) == 1, \
+                    "Cannot add count col with multiple cols in 'select': %r" % self.select
+            count = self.aggregates_module.Count(Cnt(self.select[0][1], distinct=self.distinct), self)
+        # Distinct handling is done in Count(), so don't do it at this
+        # level.
+        self.distinct = False
 
         # Set only aggregate to be the count column.
         # Clear out the select cache to reflect the new unmasked aggregates.

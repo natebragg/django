@@ -367,15 +367,17 @@ WHEN (new.%(col_name)s IS NULL)
         second = '%s-12-31'
         return [first % value, second % value]
 
-    def combine_expression(self, connector, sub_expressions):
+    def combine_expression(self, connector, sub_expressions, infix, parens):
         "Oracle requires special cases for %% and & operators in query expressions"
-        if connector == '%s %% %s':
-            connector = 'MOD(%s, %s)'
-        elif connector == '%s & %s':
-            connector = 'BITAND(%s, %s)'
-        elif connector == '%s | %s':
+        if connector == '%%':
+            connector = 'MOD'
+            infix = False
+        elif connector == '&':
+            connector = 'BITAND'
+            infix = False
+        elif connector == '|':
             raise NotImplementedError("Bit-wise or is not supported in Oracle.")
-        return super(DatabaseOperations, self).combine_expression(connector, sub_expressions)
+        return super(DatabaseOperations, self).combine_expression(connector, sub_expressions, infix, parens)
 
     def _get_sequence_name(self, table):
         name_length = self.max_name_length() - 3

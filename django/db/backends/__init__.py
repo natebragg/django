@@ -865,13 +865,20 @@ class BaseDatabaseOperations(object):
         """
         pass
 
-    def combine_expression(self, connector, sub_expressions):
+    def combine_expression(self, connector, sub_expressions, infix, parens):
         """Combine a list of subexpressions into a single expression, using
         the provided connecting operator. This is required because operators
         can vary between backends (e.g., Oracle with %% and &) and between
         subexpression types (e.g., date expressions)
         """
-        return connector % tuple(sub_expressions)
+        if not infix:
+            jse = ','.join(sub_expressions)
+            if parens:
+                return connector + '(' + jse  + ')'
+            else:
+                return connector + ' ' + jse
+        conn = ' %s ' % connector
+        return conn.join(sub_expressions) 
 
 class BaseDatabaseIntrospection(object):
     """

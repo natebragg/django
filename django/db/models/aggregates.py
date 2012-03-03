@@ -10,6 +10,9 @@ class Aggregate(expressions.ExpressionNode):
     """
     is_ordinal = False
     is_computed = False
+    preserve_tree = True
+    infix = False
+    takes_parens = True
 
     def __init__(self, lookup, **extra):
         """Instantiate a new aggregate.
@@ -24,9 +27,9 @@ class Aggregate(expressions.ExpressionNode):
         self.lookup = lookup
         self.extra = extra
         if hasattr(self.lookup,'evaluate'):
-            super(Aggregate, self).__init__([self.lookup], self.sql_template, False)
+            super(Aggregate, self).__init__([self.lookup], self.sql_function, False)
         else:
-            super(Aggregate, self).__init__([expressions.F(self.lookup)], self.sql_template, False)
+            super(Aggregate, self).__init__([expressions.F(self.lookup)], self.sql_function, False)
 
     @property
     def default_alias(self):
@@ -49,43 +52,56 @@ class Aggregate(expressions.ExpressionNode):
         aggregate = klass(self, query, is_summary=is_summary, **self.extra)
         query.aggregates[alias] = aggregate
 
+class Asterisk:
+    def evaluate(self, evaluator, qn, connection):
+        return '*', ()
+
+class Distinct(Aggregate):
+    name = 'Distinct'
+    takes_parens = False
+    sql_function = 'DISTINCT'
+
 class Avg(Aggregate):
     name = 'Avg'
     is_computed = True
-    sql_template = 'AVG(%s)'
+    sql_function = 'AVG'
 
 class Count(Aggregate):
     name = 'Count'
     is_ordinal = True
+    sql_function = 'COUNT'
 
-    @property
-    def sql_template(self):
-        return self.extra.get('distinct',False) and 'COUNT(DISTINCT %s)' or 'COUNT(%s)'
+    def __init__(self, lookup, distinct=False, **extra):
+        if lookup == '*':
+            lookup = Asterisk()
+        if distinct:
+            lookup = Distinct(lookup)
+        super(Count, self).__init__(lookup, **extra)
 
 class Max(Aggregate):
     name = 'Max'
-    sql_template = 'MAX(%s)'
+    sql_function = 'MAX'
 
 class Min(Aggregate):
     name = 'Min'
-    sql_template = 'MIN(%s)'
+    sql_function = 'MIN'
 
 class StdDev(Aggregate):
     name = 'StdDev'
     is_computed = True
 
     @property
-    def sql_template(self):
-        return self.extra.get('sample',False) and 'STDDEV_SAMP(%s)' or 'STDDEV_POP(%s)'
+    def sql_function(self):
+        return self.extra.get('sample',False) and 'STDDEV_SAMP' or 'STDDEV_POP'
 
 class Sum(Aggregate):
     name = 'Sum'
-    sql_template = 'SUM(%s)'
+    sql_function = 'SUM'
 
 class Variance(Aggregate):
     name = 'Variance'
     is_computed = True
 
     @property
-    def sql_template(self):
-        return self.extra.get('sample',False) and 'VAR_SAMP(%s)' or 'VAR_POP(%s)'
+    def sql_function(self):
+        return self.extra.get('sample',False) and 'VAR_SAMP' or 'VAR_POP'

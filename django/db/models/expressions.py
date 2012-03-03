@@ -6,17 +6,17 @@ class ExpressionNode(tree.Node):
     Base class for all query expressions.
     """
     # Arithmetic connectors
-    ADD = '%s + %s'
-    SUB = '%s - %s'
-    MUL = '%s * %s'
-    DIV = '%s / %s'
-    MOD = '%s %% %s'  # This is a quoted % operator - it is quoted
-                      # because it can be used in strings that also
-                      # have parameter substitution.
+    ADD = '+'
+    SUB = '-'
+    MUL = '*'
+    DIV = '/'
+    MOD = '%%'  # This is a quoted % operator - it is quoted
+                # because it can be used in strings that also
+                # have parameter substitution.
 
     # Bitwise operators
-    AND = '%s & %s'
-    OR = '%s | %s'
+    AND = '&'
+    OR = '|'
 
     def __init__(self, children=None, connector=None, negated=False):
         if children is not None and len(children) > 1 and connector is None:

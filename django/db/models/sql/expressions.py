@@ -49,13 +49,15 @@ class SQLEvaluator(object):
             # All the same? that type.
             if acc is None or acc.get_internal_type() == nxt.get_internal_type():
                 return nxt
-            # Has only Integers and Floats?  Float.
+            # Integers coerce to Decimals, which both coerce to Floats.
             a_t = acc.get_internal_type()
             n_t = nxt.get_internal_type()
-            if a_t == 'IntegerField' and n_t == 'FloatField':
-                return nxt
-            if n_t == 'IntegerField' and a_t == 'FloatField':
-                return acc
+            if {a_t, n_t} == {'IntegerField', 'DecimalField'}:
+                return {a_t: acc, n_t: nxt}['DecimalField']
+            if {a_t, n_t} == {'FloatField', 'DecimalField'}:
+                return computed_aggregate_field
+            if {a_t, n_t} == {'IntegerField', 'FloatField'}:
+                return computed_aggregate_field
             raise TypeError("Can't resolve type coercion of %s and %s" % (a_t, n_t))
 
         if getattr(node, 'is_ordinal', False):
@@ -123,7 +125,9 @@ class SQLEvaluator(object):
                 expressions.append(format % sql)
                 expression_params.extend(params)
 
-        return connection.ops.combine_expression(node.connector, expressions), expression_params
+        infix = getattr(node, 'infix', True)
+        par = getattr(node, 'takes_parens', True)
+        return connection.ops.combine_expression(node.connector, expressions, infix, par), expression_params
 
     def evaluate_leaf(self, node, qn, connection):
         col = self.cols[node]

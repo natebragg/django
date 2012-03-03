@@ -93,7 +93,7 @@ class Node(object):
             self.connector = conn_type
         if self.connector == conn_type:
             if isinstance(node, Node) and (node.connector == conn_type or
-                    len(node) == 1):
+                    (not getattr(node,'preserve_tree',False) and len(node) == 1)):
                 self.children.extend(node.children)
             else:
                 self.children.append(node)
