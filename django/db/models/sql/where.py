@@ -156,7 +156,6 @@ class WhereNode(tree.Node):
         else:
             # A smart object with an as_sql() method.
             field_sql, fs_params = lvalue.as_sql(qn, connection)
-            print field_sql, fs_params
 
         if value_annotation is datetime.datetime:
             cast_sql = connection.ops.datetime_cast_sql()

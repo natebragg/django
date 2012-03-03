@@ -90,6 +90,12 @@ class SQLEvaluator(object):
                     query.get_initial_alias(), False)
                 col, _, join_list = query.trim_joins(source, join_list, last, False)
 
+                # If the aggregate references a model or field that requires a join, 
+                # those joins must be LEFT OUTER - empty join rows must be returned 
+                # in order for zeros to be returned for those aggregates. 
+                for column_alias in join_list: 
+                    query.promote_alias(column_alias, unconditional=True)
+
                 self.cols[node] = (join_list[-1], col)
             except FieldDoesNotExist:
                 raise FieldError("Cannot resolve keyword %r into field. "
