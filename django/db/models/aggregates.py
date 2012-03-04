@@ -13,6 +13,7 @@ class Aggregate(expressions.ExpressionNode):
     preserve_tree = True
     infix = False
     takes_parens = True
+    nestable_aggregate = False
 
     def __init__(self, lookup, **extra):
         """Instantiate a new aggregate.
@@ -26,7 +27,7 @@ class Aggregate(expressions.ExpressionNode):
         """
         self.lookup = lookup
         self.extra = extra
-        if hasattr(self.lookup,'evaluate'):
+        if hasattr(self.lookup,'as_sql') or hasattr(self.lookup,'evaluate'):
             super(Aggregate, self).__init__([self.lookup], self.sql_function, False)
         else:
             super(Aggregate, self).__init__([expressions.F(self.lookup)], self.sql_function, False)
@@ -64,6 +65,7 @@ class Distinct(Aggregate):
     name = 'Distinct'
     takes_parens = False
     sql_function = 'DISTINCT'
+    nestable_aggregate = True
 
     @property
     def default_alias(self):

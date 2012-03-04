@@ -13,8 +13,7 @@ class SQLEvaluator(object):
         self.opts = query.get_meta()
         self.cols = {}
 
-        self.contains_aggregate = False
-        self.field = self.expression.prepare(self, query, allow_joins)
+        self.field, self.contains_aggregate = self.expression.prepare(self, query, allow_joins)
 
     def prepare(self):
         return self
@@ -35,15 +34,15 @@ class SQLEvaluator(object):
 
     def prepare_node(self, node, query, allow_joins):
         cols = []
+        children_contain_aggregate = False
+        is_aggregate = not getattr(node,'nestable_aggregate',True)
         for child in node.children:
             if hasattr(child, 'prepare'):
-                cols.append(child.prepare(self, query, allow_joins))
-                if getattr(child, 'contains_aggregate', False):
-                    node.contains_aggregate = True
+                col, child_contains_aggregate = child.prepare(self, query, allow_joins)
+                cols.append(col)
+                children_contain_aggregate |= child_contains_aggregate
 
-        if (not getattr(self,'is_summary',False) and 
-                getattr(node,'contains_aggregate',False) and
-                hasattr(node,'sql_function')):
+        if not getattr(self,'is_summary',False) and children_contain_aggregate and is_aggregate:
             raise FieldError("Cannot aggregate on aggregate '%s'" % node.name)
 
         # The final type of this expression will come from two things:
@@ -68,24 +67,24 @@ class SQLEvaluator(object):
             raise TypeError("Can't resolve type coercion of %s and %s" % (a_t, n_t))
 
         if getattr(node, 'is_ordinal', False):
-            return ordinal_aggregate_field
+            return ordinal_aggregate_field, is_aggregate | children_contain_aggregate
         elif getattr(node, 'is_computed', False):
-            return computed_aggregate_field
+            return computed_aggregate_field, is_aggregate | children_contain_aggregate
         else:
             col = reduce(coerce_types, cols, None)
-            return col
+            return col, is_aggregate | children_contain_aggregate
 
     def prepare_leaf(self, node, query, allow_joins):
         if not allow_joins and LOOKUP_SEP in node.name:
             raise FieldError("Joined field references are not permitted in this query")
 
+        is_aggregate = False
         field_list = node.name.split(LOOKUP_SEP)
         if (len(field_list) == 1 and
                 node.name in query.aggregates and (
                 query.aggregate_select_mask is None or
                 node.name in query.aggregate_select_mask)):
-            self.contains_aggregate = True
-            node.contains_aggregate = True
+            is_aggregate = True
             source = query.aggregates[node.name].field
             self.cols[node] = node.name
             if not getattr(self,'is_summary',False):
@@ -117,7 +116,7 @@ class SQLEvaluator(object):
             field_name = field_list[0] 
             source = self.opts.get_field(field_name) 
             self.cols[node] = field_name 
-        return source
+        return source, is_aggregate
 
     ##################################################
     # Vistor methods for final expression evaluation #
@@ -129,6 +128,8 @@ class SQLEvaluator(object):
         for child in node.children:
             if hasattr(child, 'evaluate'):
                 sql, params = child.evaluate(self, qn, connection)
+            elif hasattr(child, 'as_sql'):
+                sql, params = child.as_sql(qn, connection), ()
             else:
                 sql, params = '%s', (child,)
 

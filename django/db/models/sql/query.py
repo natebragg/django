@@ -1677,14 +1677,15 @@ class Query(object):
         Cnt = aggregates.Count
         if not self.select:
             opts = self.model._meta
-            ex = opts.pk.name if self.distinct else '*'
-            count = self.aggregates_module.Count(Cnt(ex, distinct=self.distinct), self, is_summary=True)
+            col = opts.pk.name if self.distinct else '*'
+            count = self.aggregates_module.Count(Cnt(col, distinct=self.distinct), self, is_summary=True)
         else:
             # Because of SQL portability issues, multi-column, distinct
             # counts need a sub-query -- see get_count() for details.
             assert len(self.select) == 1, \
                     "Cannot add count col with multiple cols in 'select': %r" % self.select
-            count = self.aggregates_module.Count(Cnt(self.select_fields[0].name, distinct=self.distinct), self)
+            col = self.select_fields[0].name if self.select_fields[0] is not None else self.select[0]
+            count = self.aggregates_module.Count(Cnt(col, distinct=self.distinct), self)
         # Distinct handling is done in Count(), so don't do it at this
         # level.
         self.distinct = False
