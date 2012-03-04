@@ -33,9 +33,13 @@ class Aggregate(expressions.ExpressionNode):
 
     @property
     def default_alias(self):
-        if hasattr(self.lookup, 'evaluate'): 
+        if hasattr(self.lookup, 'default_alias'):
+            alias = self.lookup.default_alias
+        elif hasattr(self.lookup, 'evaluate'): 
             raise ValueError('When aggregating over an expression, you need to give an alias.') 
-        return '%s__%s' % (self.lookup, self.name.lower())
+        else:
+            alias = self.lookup
+        return '%s__%s' % (alias, self.name.lower())
 
     def add_to_query(self, query, alias, is_summary):
         """Add the aggregate to the nominated query.
@@ -60,6 +64,10 @@ class Distinct(Aggregate):
     name = 'Distinct'
     takes_parens = False
     sql_function = 'DISTINCT'
+
+    @property
+    def default_alias(self):
+        return super(Distinct,self).default_alias.rpartition("__")[0]
 
 class Avg(Aggregate):
     name = 'Avg'
