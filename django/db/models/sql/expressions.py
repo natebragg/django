@@ -102,7 +102,7 @@ class SQLEvaluator(object):
                 # If the aggregate references a model or field that requires a join, 
                 # those joins must be LEFT OUTER - empty join rows must be returned 
                 # in order for zeros to be returned for those aggregates. 
-                for column_alias in join_list: 
+                for column_alias in (j for j in join_list if j != query.get_initial_alias()): 
                     query.promote_alias(column_alias, unconditional=True)
 
                 self.cols[node] = (join_list[-1], col)
