@@ -38,6 +38,13 @@ class SQLEvaluator(object):
         for child in node.children:
             if hasattr(child, 'prepare'):
                 cols.append(child.prepare(self, query, allow_joins))
+                if getattr(child, 'contains_aggregate', False):
+                    node.contains_aggregate = True
+
+        if (not getattr(self,'is_summary',False) and 
+                getattr(node,'contains_aggregate',False) and
+                hasattr(node,'sql_function')):
+            raise FieldError("Cannot aggregate on aggregate '%s'" % node.name)
 
         # The final type of this expression will come from two things:
         # * the type of the node (for nodes with computed/ordinal properties),
@@ -78,10 +85,11 @@ class SQLEvaluator(object):
                 query.aggregate_select_mask is None or
                 node.name in query.aggregate_select_mask)):
             self.contains_aggregate = True
+            node.contains_aggregate = True
             source = query.aggregates[node.name].field
             self.cols[node] = node.name
             if not getattr(self,'is_summary',False):
-                raise FieldError("Cannot calculate using '%s': it is an aggregate" % node.name)
+                self.cols[node] = query.aggregates[node.name]
         elif ((len(field_list) > 1) or 
                 (field_list[0] not in [i.name for i in self.opts.fields]) or 
                 query.group_by is None or 

@@ -52,7 +52,7 @@ class Aggregate(expressions.ExpressionNode):
         aggregate = klass(self, query, is_summary=is_summary, **self.extra)
         query.aggregates[alias] = aggregate
 
-class Asterisk:
+class Asterisk(object):
     def evaluate(self, evaluator, qn, connection):
         return '*', ()
 
