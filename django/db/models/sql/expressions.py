@@ -80,6 +80,8 @@ class SQLEvaluator(object):
             self.contains_aggregate = True
             source = query.aggregates[node.name].field
             self.cols[node] = node.name
+            if not getattr(self,'is_summary',False):
+                raise FieldError("Cannot calculate using '%s': it is an aggregate" % node.name)
         elif ((len(field_list) > 1) or 
                 (field_list[0] not in [i.name for i in self.opts.fields]) or 
                 query.group_by is None or 
