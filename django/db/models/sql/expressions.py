@@ -10,7 +10,6 @@ computed_aggregate_field = FloatField()
 class SQLEvaluator(object):
     def __init__(self, expression, query, allow_joins=True):
         self.expression = expression
-        self.opts = query.get_meta()
         self.cols = {}
 
         self.field, self.contains_aggregate = self.expression.prepare(self, query, allow_joins)
@@ -78,6 +77,7 @@ class SQLEvaluator(object):
         if not allow_joins and LOOKUP_SEP in node.name:
             raise FieldError("Joined field references are not permitted in this query")
 
+        model_opts = query.get_meta()
         is_aggregate = False
         field_list = node.name.split(LOOKUP_SEP)
         if (len(field_list) == 1 and
@@ -90,7 +90,7 @@ class SQLEvaluator(object):
             if not getattr(self,'is_summary',False):
                 self.cols[node] = query.aggregates[node.name]
         elif ((len(field_list) > 1) or 
-                (field_list[0] not in [i.name for i in self.opts.fields]) or 
+                (field_list[0] not in [i.name for i in model_opts.fields]) or 
                 query.group_by is None or 
                 not getattr(self,'is_summary',False)):
             try:
@@ -109,12 +109,12 @@ class SQLEvaluator(object):
             except FieldDoesNotExist:
                 raise FieldError("Cannot resolve keyword %r into field. "
                                  "Choices are: %s" % (self.name,
-                                                      [f.name for f in self.opts.fields]))
+                                                      [f.name for f in model_opts.fields]))
         else:
             # The simplest cases. No joins required - 
             # just reference the provided column alias. 
             field_name = field_list[0] 
-            source = self.opts.get_field(field_name) 
+            source = model_opts.get_field(field_name) 
             self.cols[node] = field_name 
         return source, is_aggregate
 
