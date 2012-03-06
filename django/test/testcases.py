@@ -778,7 +778,7 @@ class TransactionTestCase(SimpleTestCase):
         # checking each with assertAlmostEqual, which rounds the difference of each
         # pair, but this way you get much nicer error messages, and you can have an 
         # unordered comparison, at the cost of a half a digit of accuracy.
-        round_to = lambda v: round(v,places)
+        round_to = lambda v: round(v,places) if isinstance(v, float) else v
         tqs = map(round_to, map(transform, qs) )
         tvs = map(round_to, values)
         if not ordered:

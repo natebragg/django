@@ -45,6 +45,11 @@ class ExpressionNode(tree.Node):
     def evaluate(self, evaluator, qn, connection):
         return evaluator.evaluate_node(self, qn, connection)
 
+    def add_to_query(self, query, alias, is_summary):
+        from django.db.models.sql.expressions import SQLEvaluator
+        aggregate = SQLEvaluator(self, query)
+        query.aggregates[alias] = aggregate
+
     #############
     # OPERATORS #
     #############

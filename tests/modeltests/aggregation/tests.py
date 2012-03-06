@@ -70,17 +70,16 @@ class BaseAggregateTestCase(TestCase):
         self.assertAlmostEqual(vals["price_per_page"], 0.0745110754864109, places=2)
 
     def test_annotate_f_expression(self):
-        self.assertQuerysetAlmostEqual(
+        self.assertQuerysetEqual(
             Book.objects.all().annotate(price_per_page=F('price')*1.0/F('pages')), [
-                0.0671140939597315,
-                0.0437310606060606,
-                0.0989666666666667,
-                0.0848285714285714,
-                0.0731448763250883,
-                0.0792811839323467,
+                Decimal('0.07'),
+                Decimal('0.04'),
+                Decimal('0.10'),
+                Decimal('0.08'),
+                Decimal('0.07'),
+                Decimal('0.08'),
             ],
-            lambda b: b.price_per_page,
-            places=4
+            lambda b: b.price_per_page
         )
 
         self.assertQuerysetAlmostEqual(
@@ -89,6 +88,7 @@ class BaseAggregateTestCase(TestCase):
                 0.0437310606060606,
                 0.0789867238768299,
                 0.0792811839323467,
+                None,
             ],
             lambda p: p.price_per_page,
             places=4
