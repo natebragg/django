@@ -11,8 +11,6 @@ class Aggregate(expressions.ExpressionNode):
     is_ordinal = False
     is_computed = False
     preserve_tree = True
-    infix = False
-    takes_parens = True
     nestable_aggregate = False
 
     def __init__(self, lookup, **extra):
@@ -28,9 +26,13 @@ class Aggregate(expressions.ExpressionNode):
         self.lookup = lookup
         self.extra = extra
         if hasattr(self.lookup,'as_sql') or hasattr(self.lookup,'evaluate'):
-            super(Aggregate, self).__init__([self.lookup], self.sql_function, False)
+            super(Aggregate, self).__init__([self.lookup], self.default_connector, False)
         else:
-            super(Aggregate, self).__init__([expressions.F(self.lookup)], self.sql_function, False)
+            super(Aggregate, self).__init__([expressions.F(self.lookup)], self.default_connector, False)
+
+    @property
+    def default_connector(self):
+        return self.name
 
     @property
     def default_alias(self):
@@ -63,8 +65,6 @@ class Asterisk(object):
 
 class Distinct(Aggregate):
     name = 'Distinct'
-    takes_parens = False
-    sql_function = 'DISTINCT'
     nestable_aggregate = True
 
     @property
@@ -74,12 +74,10 @@ class Distinct(Aggregate):
 class Avg(Aggregate):
     name = 'Avg'
     is_computed = True
-    sql_function = 'AVG'
 
 class Count(Aggregate):
     name = 'Count'
     is_ordinal = True
-    sql_function = 'COUNT'
 
     def __init__(self, lookup, distinct=False, **extra):
         if lookup == '*':
@@ -90,28 +88,22 @@ class Count(Aggregate):
 
 class Max(Aggregate):
     name = 'Max'
-    sql_function = 'MAX'
 
 class Min(Aggregate):
     name = 'Min'
-    sql_function = 'MIN'
-
-class StdDev(Aggregate):
-    name = 'StdDev'
-    is_computed = True
-
-    @property
-    def sql_function(self):
-        return self.extra.get('sample',False) and 'STDDEV_SAMP' or 'STDDEV_POP'
 
 class Sum(Aggregate):
     name = 'Sum'
-    sql_function = 'SUM'
 
-class Variance(Aggregate):
-    name = 'Variance'
+class SampOrPopAgg(Aggregate):
     is_computed = True
 
     @property
-    def sql_function(self):
-        return self.extra.get('sample',False) and 'VAR_SAMP' or 'VAR_POP'
+    def default_connector(self):
+        return name + self.extra.get('sample',False) and 'Samp' or 'Pop'
+
+class StdDev(SampOrPopAgg):
+    name = 'StdDev'
+
+class Variance(SampOrPopAgg):
+    name = 'Variance'

@@ -229,8 +229,8 @@ class SQLCompiler(object):
                 '%s%s' % ( 
                     sql, 
                     alias is not None 
-                       and ' AS %s' % qn(truncate_name(alias, max_name_length)) 
-                       or '' 
+                        and ' AS %s' % qn(truncate_name(alias, max_name_length)) 
+                        or '' 
                 ) 
             ) 
             query_params.extend(params)

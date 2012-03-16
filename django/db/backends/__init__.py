@@ -865,20 +865,44 @@ class BaseDatabaseOperations(object):
         """
         pass
 
-    def combine_expression(self, connector, sub_expressions, infix, parens):
+    def expression_sql(self, function_type):
+        """The SQL function and template of a specific SQL function or
+        operation for this backend.
+        """
+        infix_template = '%%s %(function)s %%s'
+        prefix_template = '%(function)s(%%s)'
+        prefix_spaced_template = '%(function)s %%s'
+        try:
+            return {
+                '+': (infix_template, '+'),
+                '-': (infix_template, '-'),
+                '*': (infix_template, '*'),
+                '/': (infix_template, '/'),
+                '%%': (infix_template, '%%%%'),
+                '&': (infix_template, '&'),
+                '|': (infix_template, '|'),
+                'Distinct': (prefix_spaced_template, 'DISTINCT'),
+                'Avg': (prefix_template, 'AVG'),
+                'Count': (prefix_template, 'COUNT'),
+                'Max': (prefix_template, 'MAX'),
+                'Min': (prefix_template, 'MIN'),
+                'StdDevSamp': (prefix_template, 'STDDEV_SAMP'),
+                'StdDevPop': (prefix_template, 'STDDEV_POP'),
+                'Sum': (prefix_template, 'SUM'),
+                'VarianceSamp': (prefix_template, 'VAR_SAMP'),
+                'VariancePop': (prefix_template, 'VAR_POP'),
+                }[function_type]
+        except KeyError:
+            raise NotImplementedError('"%s" is not implmented for this backend.' % function_type)
+
+    def combine_expression(self, connector, sub_expressions):
         """Combine a list of subexpressions into a single expression, using
         the provided connecting operator. This is required because operators
         can vary between backends (e.g., Oracle with %% and &) and between
         subexpression types (e.g., date expressions)
         """
-        if not infix:
-            jse = ','.join(sub_expressions)
-            if parens:
-                return connector + '(' + jse  + ')'
-            else:
-                return connector + ' ' + jse
-        conn = ' %s ' % connector
-        return conn.join(sub_expressions) 
+        sql_template, sql_function = self.expression_sql(connector)
+        return sql_template % {'function':sql_function} % tuple(sub_expressions)
 
 class BaseDatabaseIntrospection(object):
     """

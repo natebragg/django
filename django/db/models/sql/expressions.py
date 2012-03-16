@@ -142,9 +142,7 @@ class SQLEvaluator(object):
                 expressions.append(format % sql)
                 expression_params.extend(params)
 
-        infix = getattr(node, 'infix', True)
-        par = getattr(node, 'takes_parens', True)
-        return connection.ops.combine_expression(node.connector, expressions, infix, par), expression_params
+        return connection.ops.combine_expression(node.connector, expressions), expression_params
 
     def evaluate_leaf(self, node, qn, connection):
         col = self.cols[node]
@@ -160,8 +158,9 @@ class SQLEvaluator(object):
             return col, ()
 
     def evaluate_date_modifier_node(self, node, qn, connection):
+        # The logic is that a DateModifierNode must have exactly two children
         timedelta = node.children.pop()
-        sql, params = self.evaluate_node(node, qn, connection)
+        sql, params = node.children[0].evaluate(self, qn, connection)
 
         if timedelta.days == 0 and timedelta.seconds == 0 and \
                 timedelta.microseconds == 0:
