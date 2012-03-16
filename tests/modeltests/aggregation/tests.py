@@ -71,7 +71,7 @@ class BaseAggregateTestCase(TestCase):
 
     def test_annotate_f_expression(self):
         self.assertQuerysetEqual(
-            Book.objects.all().annotate(price_per_page=F('price')*1.0/F('pages')), [
+            Book.objects.all().annotate(price_per_page=F('price')*1.0/F('pages')).order_by('pk'), [
                 Decimal('0.07'),
                 Decimal('0.04'),
                 Decimal('0.10'),
@@ -83,7 +83,7 @@ class BaseAggregateTestCase(TestCase):
         )
 
         self.assertQuerysetAlmostEqual(
-            Publisher.objects.all().annotate(price_per_page=Avg(F('book__price')*1.0/F('book__pages'))), [
+            Publisher.objects.all().annotate(price_per_page=Avg(F('book__price')*1.0/F('book__pages'))).order_by('pk'), [
                 0.0830403803131991,
                 0.0437310606060606,
                 0.0789867238768299,

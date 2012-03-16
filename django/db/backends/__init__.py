@@ -846,7 +846,7 @@ class BaseDatabaseOperations(object):
         """
         internal_type = field.get_internal_type()
         if internal_type == 'DecimalField':
-            return value
+            return util.typecast_decimal(field.format_number(value))
         elif internal_type and internal_type.endswith('IntegerField') or internal_type == 'AutoField':
             return int(value)
         elif internal_type in ('DateField', 'DateTimeField', 'TimeField'):
