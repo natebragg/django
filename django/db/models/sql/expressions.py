@@ -42,7 +42,7 @@ class SQLEvaluator(object):
                 children_contain_aggregate |= child_contains_aggregate
 
         if not getattr(self,'is_summary',False) and children_contain_aggregate and is_aggregate:
-            raise FieldError("Cannot aggregate on aggregate '%s'" % node.name)
+            raise FieldError("Cannot use aggregate '%s' on an aggregate expression" % node.name)
 
         # The final type of this expression will come from two things:
         # * the type of the node (for nodes with computed/ordinal properties),
