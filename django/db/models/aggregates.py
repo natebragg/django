@@ -2,6 +2,8 @@
 Classes to represent the definitions of aggregate functions.
 """
 
+import copy
+
 from django.db.models import expressions
 
 class Aggregate(expressions.ExpressionNode):
@@ -11,7 +13,6 @@ class Aggregate(expressions.ExpressionNode):
     is_ordinal = False
     is_computed = False
     preserve_tree = True
-    nestable_aggregate = False
 
     def __init__(self, lookup, **extra):
         """Instantiate a new aggregate.
@@ -26,13 +27,16 @@ class Aggregate(expressions.ExpressionNode):
         self.lookup = lookup
         self.extra = extra
         if hasattr(self.lookup,'as_sql') or hasattr(self.lookup,'evaluate'):
-            super(Aggregate, self).__init__([self.lookup], self.default_connector, False)
+            super(Aggregate, self).__init__([self.lookup], self.name, False)
         else:
-            super(Aggregate, self).__init__([expressions.F(self.lookup)], self.default_connector, False)
+            super(Aggregate, self).__init__([expressions.F(self.lookup)], self.name, False)
 
-    @property
-    def default_connector(self):
-        return self.name
+    def __deepcopy__(self, memodict):
+        obj = super(Aggregate, self).__deepcopy__(memodict)
+        obj.name = self.name
+        obj.lookup = copy.deepcopy(self.lookup, memodict)
+        obj.extra = copy.deepcopy(self.extra, memodict)
+        return obj
 
     @property
     def default_alias(self):
@@ -63,14 +67,6 @@ class Asterisk(object):
     def evaluate(self, evaluator, qn, connection):
         return '*', ()
 
-class Distinct(Aggregate):
-    name = 'Distinct'
-    nestable_aggregate = True
-
-    @property
-    def default_alias(self):
-        return super(Distinct,self).default_alias.rpartition("__")[0]
-
 class Avg(Aggregate):
     name = 'Avg'
     is_computed = True
@@ -82,8 +78,7 @@ class Count(Aggregate):
     def __init__(self, lookup, distinct=False, **extra):
         if lookup == '*':
             lookup = Asterisk()
-        if distinct:
-            lookup = Distinct(lookup)
+        extra['distinct'] = 'DISTINCT ' if distinct else ''
         super(Count, self).__init__(lookup, **extra)
 
 class Max(Aggregate):
@@ -98,9 +93,9 @@ class Sum(Aggregate):
 class SampOrPopAgg(Aggregate):
     is_computed = True
 
-    @property
-    def default_connector(self):
-        return name + self.extra.get('sample',False) and 'Samp' or 'Pop'
+    def __init__(self, lookup, sample=False, **extra):
+        self.name = self.name + 'Samp' if sample else self.name + 'Pop'
+        super(SampOrPopAgg, self).__init__(lookup, **extra)
 
 class StdDev(SampOrPopAgg):
     name = 'StdDev'

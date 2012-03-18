@@ -2,6 +2,7 @@ from django.core.exceptions import FieldError
 from django.db.models.fields import FieldDoesNotExist
 from django.db.models.fields import IntegerField, FloatField
 from django.db.models.sql.constants import LOOKUP_SEP
+from django.db.models.aggregates import Aggregate
 
 # Fake fields used to identify aggregate types in data-conversion operations.
 ordinal_aggregate_field = IntegerField()
@@ -34,7 +35,7 @@ class SQLEvaluator(object):
     def prepare_node(self, node, query, allow_joins):
         cols = []
         children_contain_aggregate = False
-        is_aggregate = not getattr(node,'nestable_aggregate',True)
+        is_aggregate = isinstance(node, Aggregate)
         for child in node.children:
             if hasattr(child, 'prepare'):
                 col, child_contains_aggregate = child.prepare(self, query, allow_joins)
@@ -142,7 +143,8 @@ class SQLEvaluator(object):
                 expressions.append(format % sql)
                 expression_params.extend(params)
 
-        return connection.ops.combine_expression(node.connector, expressions), expression_params
+        extra = getattr(node, 'extra', {})
+        return connection.ops.combine_expression(node.connector, expressions, **extra), expression_params
 
     def evaluate_leaf(self, node, qn, connection):
         col = self.cols[node]

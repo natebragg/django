@@ -871,7 +871,7 @@ class BaseDatabaseOperations(object):
         """
         infix_template = '%%s %(function)s %%s'
         prefix_template = '%(function)s(%%s)'
-        prefix_spaced_template = '%(function)s %%s'
+        count_template = '%(function)s(%(distinct)s%%s)'
         try:
             return {
                 '+': (infix_template, '+'),
@@ -881,9 +881,8 @@ class BaseDatabaseOperations(object):
                 '%%': (infix_template, '%%%%'),
                 '&': (infix_template, '&'),
                 '|': (infix_template, '|'),
-                'Distinct': (prefix_spaced_template, 'DISTINCT'),
                 'Avg': (prefix_template, 'AVG'),
-                'Count': (prefix_template, 'COUNT'),
+                'Count': (count_template, 'COUNT'),
                 'Max': (prefix_template, 'MAX'),
                 'Min': (prefix_template, 'MIN'),
                 'StdDevSamp': (prefix_template, 'STDDEV_SAMP'),
@@ -895,14 +894,16 @@ class BaseDatabaseOperations(object):
         except KeyError:
             raise NotImplementedError('"%s" is not implmented for this backend.' % function_type)
 
-    def combine_expression(self, connector, sub_expressions):
+    def combine_expression(self, connector, sub_expressions, **extra):
         """Combine a list of subexpressions into a single expression, using
         the provided connecting operator. This is required because operators
         can vary between backends (e.g., Oracle with %% and &) and between
         subexpression types (e.g., date expressions)
         """
         sql_template, sql_function = self.expression_sql(connector)
-        return sql_template % {'function':sql_function} % tuple(sub_expressions)
+        params = {'function':sql_function}
+        params.update(extra)
+        return sql_template % params % tuple(sub_expressions)
 
 class BaseDatabaseIntrospection(object):
     """
