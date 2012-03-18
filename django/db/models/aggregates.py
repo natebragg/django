@@ -94,7 +94,7 @@ class SampOrPopAgg(Aggregate):
     is_computed = True
 
     def __init__(self, lookup, sample=False, **extra):
-        self.name = self.name + 'Samp' if sample else self.name + 'Pop'
+        extra['samporpop'] = 'SAMP' if sample else 'POP'
         super(SampOrPopAgg, self).__init__(lookup, **extra)
 
 class StdDev(SampOrPopAgg):
