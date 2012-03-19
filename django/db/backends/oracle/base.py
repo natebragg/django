@@ -372,7 +372,7 @@ WHEN (new.%(col_name)s IS NULL)
         if function_type == '|':
             raise NotImplementedError("Bit-wise or is not supported in Oracle.")
 
-        prefix_template = '%(function)s(%%s)'
+        prefix_template = '%(function)s(%%s, %%s)'
         return {
             function_type: super(DatabaseOperations, self).expression_sql(function_type),
             '%%': (prefix_template, 'MOD'),
