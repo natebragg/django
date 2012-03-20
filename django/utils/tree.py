@@ -151,3 +151,11 @@ class Node(object):
         self.children = obj.children
         self.children.append(node)
 
+    def traverse(self):
+        yield self
+        for child in self.children:
+            if not getattr(child, 'children', None):
+                yield child
+            else:
+                for descendent in child.traverse():
+                    yield descendent

@@ -223,8 +223,10 @@ class Query(object):
 
         # Check that the compiler will be able to execute the query
         for alias, aggregate in self.aggregate_select.items():
-            for node in (node for node in aggregate.cols.keys() if hasattr(node,'sql_function')):
-                connection.ops.check_aggregate_support(node)
+            for node in aggregate.expression.traverse():
+                if isinstance(node, aggregates.Aggregate):
+                    template, agg = connection.ops.expression_sql(node.connector)
+                    connection.ops.check_aggregate_support(agg)
 
         return connection.ops.compiler(self.compiler)(self, connection, using)
 
