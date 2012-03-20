@@ -8,11 +8,8 @@ class GeoAggregate(Aggregate):
     # Flags for indicating the type of the aggregate.
     is_extent = False
 
-    def __init__(self, expression, query, is_summary=False, tolerance=0.05, **extra):
+    def __init__(self, expression, query, is_summary=False, **extra):
         super(GeoAggregate, self).__init__(expression, query, is_summary, **extra)
-
-        # Required by some Oracle aggregates.
-        self.extra['tolerance'] = tolerance
 
         # Can't use geographic aggregates on non-geometry fields.
         if not isinstance(self.field, GeometryField):
