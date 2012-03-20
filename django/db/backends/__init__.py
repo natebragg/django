@@ -891,7 +891,7 @@ class BaseDatabaseOperations(object):
                 'Variance': (samporpop_template, 'VAR'),
                 }[function_type]
         except KeyError:
-            raise NotImplementedError('"%s" is not implmented for this backend.' % function_type)
+            raise NotImplementedError('"%s" is not implemented for this backend.' % function_type)
 
     def combine_expression(self, connector, sub_expressions, **extra):
         """Combine a list of subexpressions into a single expression, using

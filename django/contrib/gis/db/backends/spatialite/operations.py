@@ -289,7 +289,7 @@ class SpatiaLiteOperations(DatabaseOperations, BaseSpatialOperations):
         given Aggregate instance.
         """
         if not self.check_aggregate_support(agg_name):
-            raise NotImplementedError('%s spatial aggregate is not implmented for this backend.' % agg_name)
+            raise NotImplementedError('%s spatial aggregate is not implemented for this backend.' % agg_name)
         agg_name = agg_name.lower()
         if agg_name == 'union': agg_name += 'agg'
         sql_template = self.select % '%(function)s(%%s)'
