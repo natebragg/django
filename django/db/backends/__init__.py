@@ -871,7 +871,6 @@ class BaseDatabaseOperations(object):
         """
         infix_template = '%%s %(function)s %%s'
         prefix_template = '%(function)s(%%s)'
-        samporpop_template = '%(function)s_%(samporpop)s(%%s)'
         count_template = '%(function)s(%(distinct)s%%s)'
         try:
             return {
@@ -886,9 +885,11 @@ class BaseDatabaseOperations(object):
                 'Count': (count_template, 'COUNT'),
                 'Max': (prefix_template, 'MAX'),
                 'Min': (prefix_template, 'MIN'),
-                'StdDev': (samporpop_template, 'STDDEV'),
+                'StdDevSamp': (prefix_template, 'STDDEV_SAMP'),
+                'StdDevPop': (prefix_template, 'STDDEV_POP'),
                 'Sum': (prefix_template, 'SUM'),
-                'Variance': (samporpop_template, 'VAR'),
+                'VarianceSamp': (prefix_template, 'VAR_SAMP'),
+                'VariancePop': (prefix_template, 'VAR_POP'),
                 }[function_type]
         except KeyError:
             raise NotImplementedError('"%s" is not implemented for this backend.' % function_type)

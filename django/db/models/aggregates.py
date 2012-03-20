@@ -27,9 +27,9 @@ class Aggregate(expressions.ExpressionNode):
         self.lookup = lookup
         self.extra = extra
         if hasattr(self.lookup,'as_sql') or hasattr(self.lookup,'evaluate'):
-            super(Aggregate, self).__init__([self.lookup], self.name, False)
+            super(Aggregate, self).__init__([self.lookup], self.default_connector, False)
         else:
-            super(Aggregate, self).__init__([expressions.F(self.lookup)], self.name, False)
+            super(Aggregate, self).__init__([expressions.F(self.lookup)], self.default_connector, False)
 
     def __deepcopy__(self, memodict):
         obj = super(Aggregate, self).__deepcopy__(memodict)
@@ -37,6 +37,10 @@ class Aggregate(expressions.ExpressionNode):
         obj.lookup = copy.deepcopy(self.lookup, memodict)
         obj.extra = copy.deepcopy(self.extra, memodict)
         return obj
+
+    @property
+    def default_connector(self):
+        return self.name
 
     @property
     def default_alias(self):
@@ -78,8 +82,7 @@ class Count(Aggregate):
     def __init__(self, lookup, distinct=False, **extra):
         if lookup == '*':
             lookup = Asterisk()
-        extra['distinct'] = 'DISTINCT ' if distinct else ''
-        super(Count, self).__init__(lookup, **extra)
+        super(Count, self).__init__(lookup, distinct=distinct and 'DISTINCT ' or '', **extra)
 
 class Max(Aggregate):
     name = 'Max'
@@ -94,8 +97,12 @@ class SampOrPopAgg(Aggregate):
     is_computed = True
 
     def __init__(self, lookup, sample=False, **extra):
-        extra['samporpop'] = 'SAMP' if sample else 'POP'
+        self.samporpop = 'SAMP' if sample else 'POP'
         super(SampOrPopAgg, self).__init__(lookup, **extra)
+
+    @property
+    def default_connector(self):
+        return self.name + self.samporpop
 
 class StdDev(SampOrPopAgg):
     name = 'StdDev'
