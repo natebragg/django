@@ -23,6 +23,11 @@ class Aggregate(expressions.ExpressionNode):
 
         Also utilizes the class variables:
          * name, the identifier for this aggregate function.
+         * is_ordinal, a boolean indicating if the output of this aggregate
+           is an integer (e.g., a count)
+         * is_computed, a boolean indicating if this output of this aggregate
+           is a computed float (e.g., an average), regardless of the input
+           type.
         """
         self.lookup = lookup
         self.extra = extra

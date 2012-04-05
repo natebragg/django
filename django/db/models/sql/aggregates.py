@@ -15,16 +15,10 @@ class Aggregate(expressions.SQLEvaluator):
          * expression is the aggregate query expression to be evaluated.
          * query is the backend-specific query instance to which the aggregate
            is to be added.
+         * promote_joins dictates whether or not table joins will be promoted
+           to LEFT OUTER when constructing the SQL for the query.
          * extra is a dictionary of additional data to provide for the
            aggregate definition
-
-        Also utilizes the class variables:
-         * is_ordinal, a boolean indicating if the output of this aggregate
-           is an integer (e.g., a count)
-         * is_computed, a boolean indicating if this output of this aggregate
-           is a computed float (e.g., an average), regardless of the input
-           type.
-
         """
         self.is_summary = is_summary
         self.extra = extra
