@@ -64,7 +64,7 @@ class Aggregate(expressions.ExpressionNode):
            summary value rather than an annotation.
         """
         klass = getattr(query.aggregates_module, self.name)
-        aggregate = klass(self, query, is_summary=is_summary, **self.extra)
+        aggregate = klass(self, query, promote_joins=True, is_summary=is_summary, **self.extra)
         query.aggregates[alias] = aggregate
 
 class Asterisk(object):

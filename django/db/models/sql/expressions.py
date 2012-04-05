@@ -9,11 +9,11 @@ ordinal_aggregate_field = IntegerField()
 computed_aggregate_field = FloatField()
 
 class SQLEvaluator(object):
-    def __init__(self, expression, query, allow_joins=True):
+    def __init__(self, expression, query, allow_joins=True, promote_joins=False):
         self.expression = expression
         self.cols = {}
 
-        self.field, self.contains_aggregate = self.expression.prepare(self, query, allow_joins)
+        self.field, self.contains_aggregate = self.expression.prepare(self, query, allow_joins, promote_joins)
 
     def prepare(self):
         return self
@@ -32,13 +32,13 @@ class SQLEvaluator(object):
     # Vistor methods for initial expression preparation #
     #####################################################
 
-    def prepare_node(self, node, query, allow_joins):
+    def prepare_node(self, node, query, allow_joins, promote_joins):
         cols = []
         children_contain_aggregate = False
         is_aggregate = isinstance(node, Aggregate)
         for child in node.children:
             if hasattr(child, 'prepare'):
-                col, child_contains_aggregate = child.prepare(self, query, allow_joins)
+                col, child_contains_aggregate = child.prepare(self, query, allow_joins, promote_joins)
                 cols.append(col)
                 children_contain_aggregate |= child_contains_aggregate
 
@@ -74,7 +74,7 @@ class SQLEvaluator(object):
             col = reduce(coerce_types, cols, None)
             return col, is_aggregate | children_contain_aggregate
 
-    def prepare_leaf(self, node, query, allow_joins):
+    def prepare_leaf(self, node, query, allow_joins, promote_joins):
         if not allow_joins and LOOKUP_SEP in node.name:
             raise FieldError("Joined field references are not permitted in this query")
 
@@ -103,8 +103,9 @@ class SQLEvaluator(object):
                 # If the aggregate references a model or field that requires a join, 
                 # those joins must be LEFT OUTER - empty join rows must be returned 
                 # in order for zeros to be returned for those aggregates. 
-                for column_alias in (j for j in join_list if j != query.get_initial_alias()): 
-                    query.promote_alias(column_alias, unconditional=True)
+                if promote_joins:
+                    for column_alias in join_list:
+                        query.promote_alias(column_alias, unconditional=True)
 
                 self.cols[node] = (join_list[-1], col)
             except FieldDoesNotExist:

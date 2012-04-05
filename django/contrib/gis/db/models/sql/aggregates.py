@@ -8,8 +8,8 @@ class GeoAggregate(Aggregate):
     # Flags for indicating the type of the aggregate.
     is_extent = False
 
-    def __init__(self, expression, query, is_summary=False, **extra):
-        super(GeoAggregate, self).__init__(expression, query, is_summary, **extra)
+    def __init__(self, expression, query, promote_joins=False, is_summary=False, **extra):
+        super(GeoAggregate, self).__init__(expression, query, promote_joins, is_summary, **extra)
 
         # Can't use geographic aggregates on non-geometry fields.
         if not isinstance(self.field, GeometryField):

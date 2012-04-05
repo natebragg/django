@@ -3,10 +3,10 @@ from django.contrib.gis.db.models.sql import GeomField
 
 class GeoAggregate(Aggregate):
     def __init__(self, lookup, tolerance=0.05, **extra):
+        super(GeoAggregate, self).__init__(lookup, **extra)
+
         # Required by some Oracle aggregates.
         self.extra['tolerance'] = tolerance
-
-        super(GeoAggregate, self).__init__(lookup, **extra)
 
 class Collect(GeoAggregate):
     name = 'Collect'

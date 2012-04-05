@@ -9,7 +9,7 @@ class Aggregate(expressions.SQLEvaluator):
     Default SQL Aggregate.
     """
 
-    def __init__(self, expression, query, is_summary=False, **extra):
+    def __init__(self, expression, query, promote_joins=False, is_summary=False, **extra):
         """Instantiate an SQL aggregate
 
          * expression is the aggregate query expression to be evaluated.
@@ -28,7 +28,7 @@ class Aggregate(expressions.SQLEvaluator):
         """
         self.is_summary = is_summary
         self.extra = extra
-        super(Aggregate, self).__init__(expression, query)
+        super(Aggregate, self).__init__(expression, query, promote_joins=promote_joins)
 
 Avg = Aggregate
 Count = Aggregate
