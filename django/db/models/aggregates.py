@@ -14,10 +14,11 @@ class Aggregate(expressions.ExpressionNode):
     is_computed = False
     preserve_tree = True
 
-    def __init__(self, lookup, **extra):
+    def __init__(self, lookup, only=None, **extra):
         """Instantiate a new aggregate.
 
          * lookup is the field on which the aggregate operates.
+         * only is a Q-object used in conditional aggregation.
          * extra is a dictionary of additional data to provide for the
            aggregate definition
 
@@ -31,6 +32,9 @@ class Aggregate(expressions.ExpressionNode):
         """
         self.lookup = lookup
         self.extra = extra
+        self.only = only
+        self.condition = None
+
         if hasattr(self.lookup,'as_sql') or hasattr(self.lookup,'evaluate'):
             super(Aggregate, self).__init__([self.lookup], self.default_connector, False)
         else:
@@ -41,6 +45,8 @@ class Aggregate(expressions.ExpressionNode):
         obj.name = self.name
         obj.lookup = copy.deepcopy(self.lookup, memodict)
         obj.extra = copy.deepcopy(self.extra, memodict)
+        obj.only = copy.deepcopy(self.only, memodict)
+        obj.condition = copy.deepcopy(self.condition, memodict)
         return obj
 
     @property

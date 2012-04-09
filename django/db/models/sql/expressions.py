@@ -41,6 +41,21 @@ class SQLEvaluator(object):
                 col, child_contains_aggregate = child.prepare(self, query, allow_joins, promote_joins)
                 cols.append(col)
                 children_contain_aggregate |= child_contains_aggregate
+        if is_aggregate and node.only:
+            original_where = query.where
+            original_having = query.having
+            node.condition = query.where_class()
+            query.where = node.condition
+            query.having = query.where_class()
+            original_alias_map = query.alias_map.keys()[:]
+            query.add_q(node.only, used_aliases=set(original_alias_map)) 
+            if original_alias_map != query.alias_map.keys():
+                raise FieldError("Aggregate's only condition can not require additional joins, Original joins: %s, joins after: %s" % (original_alias_map, query.alias_map.keys()))
+            if query.having.children:
+                raise FieldError("Aggregate's only condition can not reference annotated fields")
+            query.having = original_having
+            query.where = original_where
+            self.cols[node.condition] = node.condition
 
         if not getattr(self,'is_summary',False) and children_contain_aggregate and is_aggregate:
             raise FieldError("Cannot use aggregate '%s' on an aggregate expression" % node.name)
@@ -144,6 +159,16 @@ class SQLEvaluator(object):
                 expressions.append(format % sql)
                 expression_params.extend(params)
 
+        if getattr(node, 'condition', None):
+            condition, condition_params = self.evaluate_leaf(node.condition, qn, connection)
+            conditional_template = "CASE WHEN %(condition)s THEN %(field_name)s ELSE null END"
+            conditional_field = conditional_template % {
+                'condition': condition, 
+                'field_name': "".join(expressions)
+            } 
+            expressions = (conditional_field,)
+            condition_params.extend(expression_params)
+            expression_params = condition_params
         extra = getattr(node, 'extra', {})
         return connection.ops.combine_expression(node.connector, expressions, **extra), expression_params
 
