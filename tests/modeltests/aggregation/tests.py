@@ -39,8 +39,7 @@ class BaseAggregateTestCase(TestCase):
         self.assertEqual(len(vals), 1)
         self.assertEqual(vals["age__sum"], 254)
         vals = Author.objects.filter(age__gt=29).aggregate(Sum("age", only=Q(age__lt=29)))
-        # If there are no matching aggregates, then None, not 0 is the answer.
-        self.assertEqual(vals["age__sum"], None)
+        self.assertEqual(vals["age__sum"], 0)
 
     def test_related_aggregate(self):
         vals = Author.objects.aggregate(Avg("friends__age"))
@@ -150,7 +149,7 @@ class BaseAggregateTestCase(TestCase):
         # Test extra-select
         books = Book.objects.annotate(mean_age=Avg("authors__age"))
         books = books.annotate(mean_age2=Avg('authors__age', only=Q(authors__age__gte=0)))
-        books = books.extra(select={'testparams': 'publisher_id = %s'}, select_params=[1])
+        books = books.extra(select={'testparams': 'CASE WHEN publisher_id = %s THEN 1 ELSE 0 END'}, select_params=[1])
         b = books.get(pk=1)
         self.assertEqual(b.mean_age, 34.5)
         self.assertEqual(b.mean_age2, 34.5)
